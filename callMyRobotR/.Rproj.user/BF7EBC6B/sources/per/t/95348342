@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1551636455561.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "910077700",
+    "id" : "95348342",
+    "lastKnownWriteTime" : 1549706293,
+    "last_content_update" : 1549706293,
+    "path" : "~/work/TUD_Master/MasterThesis/master_thesis/dataAnalysis/lineplot.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

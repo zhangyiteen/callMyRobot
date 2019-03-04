@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">CallRobot</string>
+    <string name="action_settings">Settings</string>
+    <string name="enter_username">Enter Username</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="login">login</string>
+    <string name="position">position</string>
+    <string name="call_robot">Call Robot</string>
+    <string name="my_current_location">My Current Location</string>
+</resources>

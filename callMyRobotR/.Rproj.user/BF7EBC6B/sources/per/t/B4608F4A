@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1551635091922.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3536897097",
+    "id" : "B4608F4A",
+    "lastKnownWriteTime" : 1551639596,
+    "last_content_update" : 1551639596298,
+    "path" : "~/work/TUD_Master/callRobot/callMyRobotR/curveFit.R",
+    "project_path" : "curveFit.R",
+    "properties" : {
+        "cursorPosition" : "11,17",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

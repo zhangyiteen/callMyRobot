@@ -1,0 +1,128 @@
+####import multiple csv files
+
+file.num <- 60
+
+rawdata <- data.frame(ix = c(), msid = c(), host = c(), cpu = c(), mem = c(), connect.time = c(),
+                      start.trans.time = c(), total.time = c(), throughput = c())
+for(i in 1:file.num){
+  temp.data <- read.csv(sprintf('./temp/combined%d.csv', i))
+  rawdata <- rbind(rawdata, temp.data)
+}
+
+rawdata$response_time <- rawdata$start_transfer_time - rawdata$connect_time
+rawdata$transfer_time <- rawdata$total_time - rawdata$start_transfer_time
+
+newdata.df <- data.frame(ix = rawdata$X, msid = rawdata$id, host = rawdata$host,
+                         cpu =rawdata$cpu, mem = rawdata$mem, 
+                         connect.time = rawdata$connect_time,
+                         response.time = rawdata$response_time,
+                         transfer.time = rawdata$transfer_time,
+                         throughput = rawdata$throughput)
+
+#######calculation the memory usage percentage
+for (row in 1:nrow(newdata.df)) {
+  if (newdata.df[row, 'host'] == 'rasp1'){
+    newdata.df[row, 'mem']<- newdata.df[row, 'mem']/1024/1024/1024
+  } else if (newdata.df[row, 'host'] == 'rasp2'){
+    newdata.df[row, 'mem'] <- newdata.df[row, 'mem'] /1024/1024/1024
+  } else if (newdata.df[row, 'host'] == 'vm'){
+    newdata.df[row, 'mem'] <- newdata.df[row, 'mem'] /1024/1024/8192
+  }
+}
+
+device.rasp1.df <- data.frame()
+device.rasp2.df <- data.frame()
+device.vm.df <- data.frame()
+
+for(i in 1:(nrow(newdata.df)/12)){
+  device.rasp1.df <- rbind(device.rasp1.df, newdata.df[((i-1)*12+1):((i-1)*12+4),])
+  device.rasp2.df <- rbind(device.rasp2.df, newdata.df[((i-1)*12+5):((i-1)*12+8),])
+  device.vm.df <- rbind(device.vm.df, newdata.df[((i-1)*12+9):((i-1)*12+12),])
+}
+
+
+timeslot <- c(rep(seq(1, 60), each = 4) )
+print(timeslot)
+newdata.df$timeslot <- timeslot
+mycolorid <- paste(device.rasp1.df$host, device.rasp1.df$msid, sep='.')
+
+library("ggpubr") 
+p<-ggplot(data=device.rasp1.df, aes(x=timeslot, y=throughput, group=ix)) + 
+  geom_line(aes(color=mycolorid))
+p
+
+
+timeslot <- c(rep(seq(1, 60), each = 4) )
+print(timeslot)
+newdata.df$timeslot <- timeslot
+mycolorid <- paste(device.rasp2.df$host, device.rasp2.df$msid, sep='.')
+
+library("ggpubr") 
+p<-ggplot(data=device.rasp2.df, aes(x=timeslot, y=throughput, group=ix)) + 
+  geom_line(aes(color=mycolorid))
+p
+
+
+
+timeslot <- c(rep(seq(1, 60), each = 4) )
+print(timeslot)
+newdata.df$timeslot <- timeslot
+mycolorid <- paste(device.vm.df$host, device.vm.df$msid, sep='.')
+
+library("ggpubr") 
+p<-ggplot(data=device.vm.df, aes(x=timeslot, y=throughput, group=ix)) + 
+  geom_line(aes(color=mycolorid))
+p
+
+
+
+
+########Ploting line for response time for every ms 
+responsetime.rasp1.ms1 <- c()
+responsetime.rasp1.ms2 <- c()
+responsetime.rasp1.ms3 <- c()
+responsetime.rasp1.ms4 <- c()
+responsetime.rasp2.ms1 <- c()
+responsetime.rasp2.ms2 <- c()
+responsetime.rasp2.ms3 <- c()
+responsetime.rasp2.ms4 <- c()
+responsetime.vm.ms1 <- c()
+responsetime.vm.ms2 <- c()
+responsetime.vm.ms3 <- c()
+
+for(row in 1:nrow(newdata.df)){
+  if(newdata.df[row, 'host'] == 'rasp1' && newdata.df[row, 'msid'] == 'ms1'){
+    responsetime.rasp1.ms1 <- c(responsetime.rasp1.ms1, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp1' && newdata.df[row, 'msid'] == 'ms2'){
+    responsetime.rasp1.ms2 <- c(responsetime.rasp1.ms2, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp1' && newdata.df[row, 'msid'] == 'ms3'){
+    responsetime.rasp1.ms3 <- c(responsetime.rasp1.ms3, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp1' && newdata.df[row, 'msid'] == 'ms4'){
+    responsetime.rasp1.ms4 <- c(responsetime.rasp1.ms4, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp2' && newdata.df[row, 'msid'] == 'ms1'){
+    responsetime.rasp2.ms1 <- c(responsetime.rasp2.ms1, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp2' && newdata.df[row, 'msid'] == 'ms2'){
+    responsetime.rasp2.ms2 <- c(responsetime.rasp2.ms2, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp2' && newdata.df[row, 'msid'] == 'ms3'){
+    responsetime.rasp2.ms3 <- c(responsetime.rasp2.ms3, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'rasp2' && newdata.df[row, 'msid'] == 'ms4'){
+    responsetime.rasp2.ms4 <- c(responsetime.rasp2.ms4, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'vm' && newdata.df[row, 'msid'] == 'ms1'){
+    responsetime.vm.ms1 <- c(responsetime.vm.ms1, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'vm' && newdata.df[row, 'msid'] == 'ms2'){
+    responsetime.vm.ms2 <- c(responsetime.vm.ms2, newdata.df[row, 'response.time'])
+  } else if(newdata.df[row, 'host'] == 'vm' && newdata.df[row, 'msid'] == 'ms3'){
+    responsetime.vm.ms3 <- c(responsetime.vm.ms3, newdata.df[row, 'response.time'])
+  }
+}
+
+
+#Drawing the z-score value line chart for device: rasp1, rasp2, vm
+plot(60, responsetime.rasp1.ms1, 
+     type = "l", pch = 18, col = "red", 
+     xlab = 'time', ylab = 'response time',
+     ylim = c(min(newdata.df$response.time), max(newdata.df$response.time)))
+lines(60, responsetime.rasp1.ms2, col = "blue", type = "l")
+lines(60, responsetime.rasp1.ms3, col = "blue", type = "l")
+lines(60, responsetime.rasp1.ms3, col = "blue", type = "l")
+lines(ix.vm, responsetime.vm, pch = 18, col = "green", type = "l")
