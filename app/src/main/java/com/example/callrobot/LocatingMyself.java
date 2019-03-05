@@ -55,7 +55,8 @@ import java.util.UUID;
 
 public class LocatingMyself extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
 
-    ImageView imageView;
+    ImageView imageHuman;
+    ImageView imageRobot;
     ObjectAnimator objectAnimator;
 
     HashMap<String, PointF> virtualMap = new HashMap<>();
@@ -65,7 +66,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     // debug log tag
     private static final String TAG = "BeaconFind";
     private static final String DEBUG_TAG = "Debug";
-
+    private static final String INRENT_TAG = "Intent";
     private static final String EXCEPTION_TAG = "Exception";
     private static final String ERROR_TAG = "Error";
 
@@ -76,6 +77,14 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     private BeaconManager beaconManager;
 
     // restful client
+    private static String uniqueID = UUID.randomUUID().toString();
+    private String sessionTicket;
+    private String robotID;
+
+    public Boolean isRobotCalled;
+
+
+    // restful client
 //    private static String uniqueID = UUID.randomUUID().toString();
 //    private String sessionTicket;
 //    private String robotID;
@@ -84,6 +93,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_locating_myself);
+        this.isRobotCalled = getIntent().getExtras().getBoolean("isRobotCalled");
 
         initBeaconStationLocation();
         //toolbar customization
@@ -91,6 +101,14 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Call Robot");
 
+        /**get the intent*/
+
+
+        Log.d(INRENT_TAG,"isRobotCalled value is: " + isRobotCalled.toString());
+
+//        Intent intent1 = getIntent();
+//        Boolean isRobotCalled1 = intent.getBooleanExtra("isRobotCalled", false);
+//        Log.d(INRENT_TAG,"isRobotCalled value is: " + isRobotCalled1);
 
         // create a listener for open call robot activity
         callRobotButton =(ImageButton)findViewById(R.id.call_robot_button);
@@ -103,12 +121,19 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         });
 
         // create the human icon
-        imageView=(ImageView)findViewById(R.id.human);
+        imageHuman=(ImageView)findViewById(R.id.human);
+        imageRobot = (ImageView)findViewById(R.id.callRobotRobot);
+        if(isRobotCalled == false){
+            imageRobot.setVisibility(View.INVISIBLE);
+        } else {
+            imageRobot.setVisibility(View.VISIBLE);
+        }
 
         // initial user current location, triggered every time this activity load.
-        float initialHorizontalTarget = 680;
-        float initialVerticalTarget = 600;
-        initialUserLocation(initialHorizontalTarget, initialVerticalTarget);
+        float initialHumanHorizontalTarget = 680;
+        float initialHumanVerticalTarget = 600;
+        initialLocation(imageHuman,initialHumanHorizontalTarget, initialHumanVerticalTarget);
+        initialLocation(imageRobot,450, 1280);
 
         // beacon scanning and showing
         Log.d(DEBUG_TAG, "starting beacon manager");
@@ -131,6 +156,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 //        beaconManager.bind(this);
 //    }
 
+
     // ask for the location access permission from android system
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantRestuls){
@@ -150,7 +176,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 super.onRequestPermissionsResult(requestCode, permissions, grantRestuls);
         }
     }
-
 
     @Override
     public void onBeaconServiceConnect() {
@@ -221,107 +246,63 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
         //send the user currently location to the server,
         // here do not need to send it to server
-        //updateLocation(locations);
+        updateLocation(locations);
 
         //update user current location on the map
         updateUserLocation(locations);
     }
 
-//    @Override
-//    public void onPause() {
-//        super.onPause();
-//        beaconManager.unbind(this);
-//    }
 
-//
-//    // updating user location on map
-//    public void updateUserLocation(JSONArray locs) {
-//        double mapScale = 40;
-//        double distanceAX = 0;
-//
-//        Log.d(DEBUG_TAG, "update user loc:"  + locs.toString());
-//        if(locs.length() >= 2){
-//            //get the nearest distance
-//            JSONObject beaconLocA = null;
-//            try {
-//                beaconLocA = locs.getJSONObject(0);
-//            } catch (JSONException e) {
-//                e.printStackTrace();
-//            }
-//            double distanceToA = Double.valueOf(beaconLocA.optString("dis"));
-//            String beaconIdA = beaconLocA.optString("bid");
-//            PointF beaconCoordinateA = null;
-//            PointF beaconCoordinateB = null;
-//
-//            //load the nearest beacon station coordinate(beaconCoordinateA)
-//            for(String i : virtualMap.keySet()){
-//                if(i.equals(beaconIdA)){
-//                    Log.d(TAG, "nearest beacon station:" + i);
-//                    beaconCoordinateA = virtualMap.get(i);
-//                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
-//                }
-//            }
-//
-//
-//            // get the 2nd nearest distance
-//            JSONObject beaconLocB = null;
-//            try {
-//                beaconLocB = locs.getJSONObject(1);
-//            } catch (JSONException e) {
-//                e.printStackTrace();
-//            }
-//
-//            double distanceToB =  Double.valueOf(beaconLocB.optString("dis"));
-//            String beaconIdB = beaconLocB.optString("bid").toString();
-//
-//            //load the second beacon station coordinate(beaconCoordinateB)
-//            for(String i : virtualMap.keySet()){
-//                if(i.equals(beaconIdB)){
-//                    Log.d(TAG, "2nd beacon station:" + i);
-//                    beaconCoordinateB = virtualMap.get(i);
-//                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
-//                }
-//            }
-//
-//            //Calculate the distance between nearest beacon station and 2nd nearest beacon station
-//            //on the virtualMap
-//            double distanceAB = distanceCalculation(beaconCoordinateA, beaconCoordinateB);
-//            Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);
-//            distanceAX = (distanceToA * distanceToA - distanceToB * distanceToB + distanceAB * distanceAB) / (2 * distanceAB);
-//
-//            if(locs.length() > 2){
-//                //get the third distance
-//                JSONObject beaconLocC = null;
-//                try {
-//                    beaconLocC = locs.getJSONObject(2);
-//                } catch (JSONException e) {
-//                    e.printStackTrace();
-//                }
-//
-//                // get the distance from human to 3rd beacon station
-//                double distanceToC = Double.valueOf(beaconLocC.optString("dis"));
-//                PointF beaconCoordinateC = null;
-//
-//                String beaconIdC = beaconLocC.optString("bid").toString();
-//                //load the 3rd beacon station coordinate(beaconCoordinateB)
-//                for(String i : virtualMap.keySet()){
-//                    if(i == beaconIdC){
-//                        beaconCoordinateC = virtualMap.get(i);
-//                    }
-//                }
-//                double distanceAC = distanceCalculation(beaconCoordinateA, beaconCoordinateC);
-//                double distanceAX2 = (distanceToA * distanceToA - distanceToC * distanceToC + distanceAC * distanceAC) / (2 * distanceAC);
-//                distanceAX = (distanceAX+distanceAX2) / 2;
-//            }
-//            double userCurrentVertical = 0;
-//            if(beaconCoordinateB.y>beaconCoordinateA.y){
-//                 userCurrentVertical = beaconCoordinateA.y + distanceAX;
-//            } else{
-//                userCurrentVertical = beaconCoordinateA.y - distanceAX;
-//            }
-//            showCurrentLocation( (float)userCurrentVertical);
-//        }
-//    }
+    public void updateLocation(JSONArray locations){
+//       "{'uid':'1246', 'loc':[{'a':5, 'b':3, 'c':-30}]}"
+//       "{'uid':'1246', 'loc':[{'a':5, 'b':3, 'c':-30}], 'ticket':1234, 'robot':xxxx}"
+        JSONObject payload = new JSONObject();
+
+        StringEntity entity = null;
+        try {
+            payload.put("uid", uniqueID);
+            payload.put("loc", locations);
+            if(sessionTicket != null && robotID != null){
+                payload.put("ticket", sessionTicket);
+                payload.put("robot", robotID);
+            }
+            entity = new StringEntity(payload.toString());
+        } catch (UnsupportedEncodingException e){
+            Log.i(EXCEPTION_TAG, e.toString());
+        } catch (JSONException e){
+            Log.i(EXCEPTION_TAG, e.toString());
+        }
+
+        RestClient.post(this, "proximity/", entity, "application/json", new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response){
+                try {
+                    if(response.has("ticket") && response.has("robot")){
+                        // check if it is my session
+                        if(response.getString("ticket").equals(sessionTicket)){
+                            // updating robot location
+                            if(response.has("loc")){
+                                JSONArray robotLoc = response.getJSONArray("loc");
+                                updateRobotLocation(response.getString("robot"), robotLoc);
+                            }
+                        }
+                    }
+                } catch (JSONException e) {
+                    System.out.println(e);
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable){
+                System.out.println(responseString);
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject response){
+                Log.e(ERROR_TAG, "update location failed, no network" + statusCode);
+            }
+
+        });
+    }
 
     public void updateUserLocation(JSONArray locs) throws JSONException {
 
@@ -393,9 +374,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 }
             }
 
-            //calculate the vertical movement distance
-
-
             //calculate the horizontal movement distance
             if( isHorizontal == true){
                 if(distanceToA < 1.5){
@@ -420,21 +398,152 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         }
     }
 
-
+    /** once the call robot button clicked,
+     * send a message to the server to call a robot
+     * send_param: id uuid of the mobile device
+     * response: robot name, current location?
+     * */
     // open the call robot activity
     public void callRobot(){
-        Intent intent = new Intent(this, CallRobot.class);
-        startActivity(intent);
+        this.isRobotCalled = true;
+        // show and initialise the robot location
+        if(this.isRobotCalled == true){
+            imageRobot.setVisibility(View.VISIBLE);
+            initialLocation(imageRobot,450, 1250);
+        }
+
+        RequestParams params = new RequestParams();
+        params.put("uid", uniqueID);
+        Log.d(TAG, "callRobot request is sent" );
+        RestClient.get("assist/", params, new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                // response {"ticket":session_ticket, "robot":robot_id}
+                // if no robot available response {}
+                try {
+                    if(response.has("robot") && response.has("ticket")) {
+                        sessionTicket = response.getString("ticket");
+                        robotID = response.getString("robot");
+                        Log.d(DEBUG_TAG, "ticket:" + sessionTicket + " robot:" + robotID);
+                        if(response.has("loc")){
+                            updateRobotLocation(robotID, response.getJSONArray("loc"));
+                        }
+                    } else {
+                        // TODO: emit message: no robot, please try again
+                    }
+                } catch (JSONException e){
+                    System.out.println(e);
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable){
+                System.out.println(responseString);
+            }
+        });
+    }
+
+    public void updateRobotLocation(String robot, JSONArray RobotLocs) throws JSONException {
+        // updating robot location on map
+        Log.d(DEBUG_TAG, "update robot loc:" + robot + " loc:" + RobotLocs.toString());
+        if(RobotLocs.length() >= 2){
+            //get the nearest distance
+            JSONObject beaconLocA = null;
+            try {
+                beaconLocA = RobotLocs.getJSONObject(0);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            // The distance to the nearest beacon station
+            double distanceToA = Double.valueOf(beaconLocA.optString("dis"));
+
+            String beaconIdA = beaconLocA.optString("bid");
+            PointF beaconCoordinateA = null;
+            PointF beaconCoordinateB = null;
+
+            //load the nearest beacon station coordinate from virtual map(beaconCoordinateA)
+            for(String i : virtualMap.keySet()){
+                if(i.equals(beaconIdA)){
+                    Log.d(TAG, "nearest beacon station:" + i);
+                    beaconCoordinateA = virtualMap.get(i);
+                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
+                }
+            }
+
+            // get the 2nd nearest distance
+            JSONObject beaconLocB = null;
+            try {
+                beaconLocB = RobotLocs.getJSONObject(1);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            //double distanceToB =  Double.valueOf(beaconLocB.optString("dis"));
+            String beaconIdB = beaconLocB.optString("bid").toString();
+
+            //load the second beacon station coordinate(beaconCoordinateB)
+            for(String i : virtualMap.keySet()){
+                if(i.equals(beaconIdB)){
+                    Log.d(TAG, "2nd beacon station:" + i);
+                    beaconCoordinateB = virtualMap.get(i);
+                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
+                }
+            }
+
+            Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);//distanceAX = (distanceToA * distanceToA - distanceToB * distanceToB + distanceAB * distanceAB) / (2 * distanceAB);
+
+            double robotCurrentVertical = 0;
+            double robotCurrentHorizontal = 0;
+
+            boolean isHorizontal = false;
+            boolean isVertical = true;
+
+            for (int i = 0; i < RobotLocs.length(); i++) {
+                JSONObject beaconObject = RobotLocs.getJSONObject(i);
+                if(beaconObject.optString("bid").equals("0x000000000008")){
+                    isHorizontal = false;
+                    isVertical = true;
+                }
+                if(beaconObject.optString("bid").equals("0x000000000001")){
+                    isHorizontal = true;
+                    isVertical = false;
+                }
+            }
+
+            //calculate the horizontal movement distance
+            if( isHorizontal == true){
+                if(distanceToA < 1.5){
+                    robotCurrentHorizontal = beaconCoordinateA.x;
+                    Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
+                } else {
+                    robotCurrentHorizontal = (beaconCoordinateA.x + beaconCoordinateB.x)/2;
+                }
+                showRobotCurrentLocation(isHorizontal, (float) robotCurrentHorizontal, isVertical, 0);
+
+            }
+
+            //calculate the vertical movement distance
+            if(isVertical == true) {
+                if(distanceToA < 1.5){
+                    robotCurrentVertical = beaconCoordinateA.y;
+                    Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
+                } else {
+                    robotCurrentVertical = (beaconCoordinateA.y + beaconCoordinateB.y)/2;
+                }
+                showRobotCurrentLocation(isHorizontal, 0, isVertical, (float)robotCurrentVertical);
+            }
+        }
     }
 
 
-    // initial user current location, should triggered every time this activity load.
-    public void initialUserLocation(float horizontalTarget, float verticalTarget){
-        objectAnimator= ObjectAnimator.ofFloat(imageView,"x",horizontalTarget);
+    // initial ImageView Icon current location, should triggered every time this activity load.
+    public void initialLocation(ImageView imageTarget, float horizontalTarget, float verticalTarget){
+        objectAnimator= ObjectAnimator.ofFloat(imageTarget,"x",horizontalTarget);
         objectAnimator.setDuration(0);
         objectAnimator.start();
 
-        objectAnimator= ObjectAnimator.ofFloat(imageView,"y", verticalTarget);
+        objectAnimator= ObjectAnimator.ofFloat(imageTarget,"y", verticalTarget);
         objectAnimator.setDuration(0);
         objectAnimator.start();
     }
@@ -444,24 +553,34 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     public void showCurrentLocation(boolean isHorizontal, float horizontalTarget,
                                     boolean isVertical, float verticalTarget){
         if(isHorizontal == true){
-            objectAnimator= ObjectAnimator.ofFloat(imageView,"x",horizontalTarget);
+            objectAnimator= ObjectAnimator.ofFloat(imageHuman,"x",horizontalTarget);
             objectAnimator.setDuration(0);
             objectAnimator.start();
         }
 
         if(isVertical == true){
-            objectAnimator= ObjectAnimator.ofFloat(imageView,"y", verticalTarget);
+            objectAnimator= ObjectAnimator.ofFloat(imageHuman,"y", verticalTarget);
             objectAnimator.setDuration(0);
             objectAnimator.start();
         }
     }
 
-//    public void showCurrentLocation(float verticalTarget){
-//            objectAnimator= ObjectAnimator.ofFloat(imageView,"y", verticalTarget);
-//            objectAnimator.setDuration(500);
-//            objectAnimator.start();
-//
-//    }
+
+    // update the robot location in real-time
+    public void showRobotCurrentLocation(boolean isHorizontal, float horizontalTarget,
+                                         boolean isVertical, float verticalTarget){
+        if(isHorizontal == true) {
+            objectAnimator = ObjectAnimator.ofFloat(imageRobot, "x", horizontalTarget);
+            objectAnimator.setDuration(500);
+            objectAnimator.start();
+        }
+        if(isVertical == true) {
+            objectAnimator= ObjectAnimator.ofFloat(imageRobot,"y", verticalTarget);
+            objectAnimator.setDuration(500);
+            objectAnimator.start();
+        }
+    }
+
 //beacon station location initialization
     public HashMap<String,PointF> initBeaconStationLocation() {
 

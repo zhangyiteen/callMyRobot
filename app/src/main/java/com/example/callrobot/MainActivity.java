@@ -5,6 +5,7 @@ import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.media.MediaPlayer;
 import android.widget.ImageButton;
@@ -20,6 +21,9 @@ public class MainActivity extends AppCompatActivity {
     private VideoView videoBG;
     private MediaPlayer mMediaPlayer;
     private int mCurrentVideoPosition;
+    private static final String TAG = "RobotCalled";
+
+    public Boolean isRobotCalled;
 
 
     //create a hashMap to storage the virtualMap info
@@ -120,13 +124,22 @@ public class MainActivity extends AppCompatActivity {
 
     // open the people location activity
     public void locateMyself(){
+        isRobotCalled = false;
+        //Intent i = new Intent(MainActivity.this, LocatingMyself.class);
+
+        //startActivity(i);
+        Log.d(TAG, "the isRobotCalled is set to:" + isRobotCalled.toString());
         Intent intent = new Intent(this, LocatingMyself.class);
+        intent.putExtra("isRobotCalled", isRobotCalled);
         startActivity(intent);
     }
 
     // open the call robot activity
     public void callRobot(){
-        Intent intent = new Intent(this, CallRobot.class);
+        isRobotCalled = true;
+        Log.d(TAG, "the isRobotCalled is set to:" + isRobotCalled.toString());
+        Intent intent = new Intent(this, LocatingMyself.class);
+        intent.putExtra("isRobotCalled", isRobotCalled);
         startActivity(intent);
     }
 

@@ -78,6 +78,7 @@ public class CallRobot extends AppCompatActivity implements BeaconConsumer, Rang
         getSupportActionBar().setTitle("Call Robot");
 
         imageHuman=(ImageView)findViewById(R.id.callRobotHuman);
+
         imageRobot=(ImageView)findViewById(R.id.callRobotRobot);
 
 
