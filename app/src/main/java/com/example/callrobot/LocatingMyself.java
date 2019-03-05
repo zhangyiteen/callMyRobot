@@ -3,7 +3,6 @@ package com.example.callrobot;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.animation.ObjectAnimator;
-import android.content.Intent;
 import android.graphics.PointF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -33,17 +32,18 @@ import java.util.Iterator;
 import java.util.Map;
 
 // for restful client
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.entity.StringEntity;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -54,6 +54,8 @@ import java.util.UUID;
 
 
 public class LocatingMyself extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
+
+    public static final String BASE_URL = "http://192.168.2.101:8000/v1/";
 
     ImageView imageHuman;
     ImageView imageRobot;
@@ -80,14 +82,11 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     private static String uniqueID = UUID.randomUUID().toString();
     private String sessionTicket;
     private String robotID;
+    private RequestQueue myQueue;
 
     public Boolean isRobotCalled;
 
 
-    // restful client
-//    private static String uniqueID = UUID.randomUUID().toString();
-//    private String sessionTicket;
-//    private String robotID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,6 +122,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         // create the human icon
         imageHuman=(ImageView)findViewById(R.id.human);
         imageRobot = (ImageView)findViewById(R.id.callRobotRobot);
+
         if(isRobotCalled == false){
             imageRobot.setVisibility(View.INVISIBLE);
         } else {
@@ -148,14 +148,9 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         beaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_UID_LAYOUT));
         beaconManager.bind(this);
-    }
-//
-//    @Override
-//    public void onResume(){
-//        super.onResume();
-//        beaconManager.bind(this);
-//    }
 
+        myQueue = Volley.newRequestQueue(this);
+    }
 
     // ask for the location access permission from android system
     @Override
@@ -258,7 +253,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 //       "{'uid':'1246', 'loc':[{'a':5, 'b':3, 'c':-30}], 'ticket':1234, 'robot':xxxx}"
         JSONObject payload = new JSONObject();
 
-        StringEntity entity = null;
         try {
             payload.put("uid", uniqueID);
             payload.put("loc", locations);
@@ -266,42 +260,40 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 payload.put("ticket", sessionTicket);
                 payload.put("robot", robotID);
             }
-            entity = new StringEntity(payload.toString());
-        } catch (UnsupportedEncodingException e){
-            Log.i(EXCEPTION_TAG, e.toString());
-        } catch (JSONException e){
+        }  catch (JSONException e){
             Log.i(EXCEPTION_TAG, e.toString());
         }
 
-        RestClient.post(this, "proximity/", entity, "application/json", new JsonHttpResponseHandler(){
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response){
-                try {
-                    if(response.has("ticket") && response.has("robot")){
-                        // check if it is my session
-                        if(response.getString("ticket").equals(sessionTicket)){
-                            // updating robot location
-                            if(response.has("loc")){
-                                JSONArray robotLoc = response.getJSONArray("loc");
-                                updateRobotLocation(response.getString("robot"), robotLoc);
+        String url = BASE_URL + "proximity/";
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.POST, url, payload, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(DEBUG_TAG, "response?"+response);
+                        try {
+                            if(response.has("ticket") && response.has("robot")){
+                                // check if it is my session
+                                if(response.getString("ticket").equals(sessionTicket)){
+                                    // updating robot location
+                                    if(response.has("loc")){
+                                        JSONArray robotLoc = response.getJSONArray("loc");
+                                        updateRobotLocation(response.getString("robot"), robotLoc);
+                                    }
+                                }
                             }
+                        } catch (JSONException e) {
+                            System.out.println(e);
                         }
                     }
-                } catch (JSONException e) {
-                    System.out.println(e);
-                }
-            }
+                    }, new Response.ErrorListener() {
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable){
-                System.out.println(responseString);
-            }
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject response){
-                Log.e(ERROR_TAG, "update location failed, no network" + statusCode);
-            }
-
-        });
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // TODO: Handle error
+                        Log.d(TAG,"network post error");
+                    }
+                });
+        myQueue.add(jsonObjectRequest);
     }
 
     public void updateUserLocation(JSONArray locs) throws JSONException {
@@ -411,36 +403,39 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
             imageRobot.setVisibility(View.VISIBLE);
             initialLocation(imageRobot,450, 1250);
         }
+        String url = BASE_URL + "assist/?uid=" + uniqueID;
+        Log.d(DEBUG_TAG, "call clicked: " + url);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(DEBUG_TAG, "" + response);
+                        // response {"ticket":session_ticket, "robot":robot_id}
+                        // if no robot available response {}
+                        try {
+                            if (response.has("robot") && response.has("ticket")) {
+                                sessionTicket = response.getString("ticket");
+                                robotID = response.getString("robot");
+                                Log.d(DEBUG_TAG, "ticket:" + sessionTicket + " robot:" + robotID);
+                                if (response.has("loc")) {
+                                    updateRobotLocation(robotID, response.getJSONArray("loc"));
+                                }
+                            } else {
+                                // TODO: emit message: no robot, please try again
+                            }
+                        } catch (JSONException e) {
+                            System.out.println(e);
+                        }}
+                    }, new Response.ErrorListener() {
 
-        RequestParams params = new RequestParams();
-        params.put("uid", uniqueID);
-        Log.d(TAG, "callRobot request is sent" );
-        RestClient.get("assist/", params, new JsonHttpResponseHandler(){
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                // response {"ticket":session_ticket, "robot":robot_id}
-                // if no robot available response {}
-                try {
-                    if(response.has("robot") && response.has("ticket")) {
-                        sessionTicket = response.getString("ticket");
-                        robotID = response.getString("robot");
-                        Log.d(DEBUG_TAG, "ticket:" + sessionTicket + " robot:" + robotID);
-                        if(response.has("loc")){
-                            updateRobotLocation(robotID, response.getJSONArray("loc"));
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            // TODO: Handle error
+                            Log.d(TAG,"network get error");
                         }
-                    } else {
-                        // TODO: emit message: no robot, please try again
-                    }
-                } catch (JSONException e){
-                    System.out.println(e);
-                }
-            }
+                    });
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable){
-                System.out.println(responseString);
-            }
-        });
+        myQueue.add(jsonObjectRequest);
     }
 
     public void updateRobotLocation(String robot, JSONArray RobotLocs) throws JSONException {
