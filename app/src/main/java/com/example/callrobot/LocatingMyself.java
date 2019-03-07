@@ -27,9 +27,9 @@ import org.altbeacon.beacon.Region;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Set;
-import java.util.Iterator;
-import java.util.Map;
+//import java.util.Set;
+//import java.util.Iterator;
+//import java.util.Map;
 
 // for restful client
 import com.android.volley.Request;
@@ -55,7 +55,7 @@ import java.util.UUID;
 
 public class LocatingMyself extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
 
-    public static final String BASE_URL = "http://192.168.2.101:8000/v1/";
+    public static final String BASE_URL = "http://192.168.1.101:8000/v1/";
 
     ImageView imageHuman;
     ImageView imageRobot;
@@ -102,7 +102,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
         /**get the intent*/
 
-
         Log.d(INRENT_TAG,"isRobotCalled value is: " + isRobotCalled.toString());
 
 //        Intent intent1 = getIntent();
@@ -122,6 +121,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         // create the human icon
         imageHuman=(ImageView)findViewById(R.id.human);
         imageRobot = (ImageView)findViewById(R.id.callRobotRobot);
+        initialLocation(imageRobot,450, 1300);
 
         if(isRobotCalled == false){
             imageRobot.setVisibility(View.INVISIBLE);
@@ -130,10 +130,10 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
         }
 
         // initial user current location, triggered every time this activity load.
-        float initialHumanHorizontalTarget = 680;
+        float initialHumanHorizontalTarget = 660;
         float initialHumanVerticalTarget = 600;
         initialLocation(imageHuman,initialHumanHorizontalTarget, initialHumanVerticalTarget);
-        initialLocation(imageRobot,450, 1280);
+
 
         // beacon scanning and showing
         Log.d(DEBUG_TAG, "starting beacon manager");
@@ -270,19 +270,20 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                     @Override
                     public void onResponse(JSONObject response) {
                         Log.d(DEBUG_TAG, "response?"+response);
-                        try {
-                            if(response.has("ticket") && response.has("robot")){
-                                // check if it is my session
+                        if(response.has("ticket") && response.has("robot")){
+                            // check if it is my session
+                            try {
                                 if(response.getString("ticket").equals(sessionTicket)){
                                     // updating robot location
                                     if(response.has("loc")){
                                         JSONArray robotLoc = response.getJSONArray("loc");
                                         updateRobotLocation(response.getString("robot"), robotLoc);
                                     }
+
                                 }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        } catch (JSONException e) {
-                            System.out.println(e);
                         }
                     }
                     }, new Response.ErrorListener() {
@@ -317,7 +318,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 if(i.equals(beaconIdA)){
                     Log.d(TAG, "nearest beacon station:" + i);
                     beaconCoordinateA = virtualMap.get(i);
-                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
+                    //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
                 }
             }
 
@@ -337,14 +338,14 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 if(i.equals(beaconIdB)){
                     Log.d(TAG, "2nd beacon station:" + i);
                     beaconCoordinateB = virtualMap.get(i);
-                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
+                    //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
                 }
             }
 
             //Calculate the distance between nearest beacon station and 2nd nearest beacon station
             //on the virtualMap
             //double distanceAB = distanceCalculation(beaconCoordinateA, beaconCoordinateB);
-            Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);
+            //Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);
             //distanceAX = (distanceToA * distanceToA - distanceToB * distanceToB + distanceAB * distanceAB) / (2 * distanceAB);
 
 
@@ -354,7 +355,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
             boolean isHorizontal = false;
             boolean isVertical = true;
 
-            for (int i = 0; i < locs.length(); i++) {
+            for (int i = 0; i < 2; i++) {
                 JSONObject beaconObject = locs.getJSONObject(i);
                 if(beaconObject.optString("bid").equals("x000000000008")){
                     isHorizontal = false;
@@ -397,12 +398,12 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
      * */
     // open the call robot activity
     public void callRobot(){
+
+         //show and initialise the robot location
         this.isRobotCalled = true;
-        // show and initialise the robot location
-        if(this.isRobotCalled == true){
-            imageRobot.setVisibility(View.VISIBLE);
-            initialLocation(imageRobot,450, 1250);
-        }
+        imageRobot.setVisibility(View.VISIBLE);
+        initialLocation(imageRobot,450, 1300);
+
         String url = BASE_URL + "assist/?uid=" + uniqueID;
         Log.d(DEBUG_TAG, "call clicked: " + url);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
@@ -417,7 +418,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                                 sessionTicket = response.getString("ticket");
                                 robotID = response.getString("robot");
                                 Log.d(DEBUG_TAG, "ticket:" + sessionTicket + " robot:" + robotID);
-                                if (response.has("loc")) {
+                                if (response.has("loc") && response.getJSONArray("loc").length() >= 2) {
                                     updateRobotLocation(robotID, response.getJSONArray("loc"));
                                 }
                             } else {
@@ -427,7 +428,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                             System.out.println(e);
                         }}
                     }, new Response.ErrorListener() {
-
                         @Override
                         public void onErrorResponse(VolleyError error) {
                             // TODO: Handle error
@@ -441,7 +441,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     public void updateRobotLocation(String robot, JSONArray RobotLocs) throws JSONException {
         // updating robot location on map
         Log.d(DEBUG_TAG, "update robot loc:" + robot + " loc:" + RobotLocs.toString());
-        if(RobotLocs.length() >= 2){
+        //if(RobotLocs.length() >= 2){
             //get the nearest distance
             JSONObject beaconLocA = null;
             try {
@@ -462,7 +462,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 if(i.equals(beaconIdA)){
                     Log.d(TAG, "nearest beacon station:" + i);
                     beaconCoordinateA = virtualMap.get(i);
-                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
+                    //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
                 }
             }
 
@@ -474,7 +474,6 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 e.printStackTrace();
             }
 
-            //double distanceToB =  Double.valueOf(beaconLocB.optString("dis"));
             String beaconIdB = beaconLocB.optString("bid").toString();
 
             //load the second beacon station coordinate(beaconCoordinateB)
@@ -482,53 +481,53 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                 if(i.equals(beaconIdB)){
                     Log.d(TAG, "2nd beacon station:" + i);
                     beaconCoordinateB = virtualMap.get(i);
-                    Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
+                    //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
                 }
             }
 
-            Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);//distanceAX = (distanceToA * distanceToA - distanceToB * distanceToB + distanceAB * distanceAB) / (2 * distanceAB);
+            //Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);
 
             double robotCurrentVertical = 0;
             double robotCurrentHorizontal = 0;
 
-            boolean isHorizontal = false;
-            boolean isVertical = true;
+            boolean isRobotHorizontal = true;
+            boolean isRobotVertical = false;
 
-            for (int i = 0; i < RobotLocs.length(); i++) {
+            for (int i = 0; i < 2; i++) {
                 JSONObject beaconObject = RobotLocs.getJSONObject(i);
                 if(beaconObject.optString("bid").equals("0x000000000008")){
-                    isHorizontal = false;
-                    isVertical = true;
+                    isRobotHorizontal = false;
+                    isRobotVertical = true;
                 }
                 if(beaconObject.optString("bid").equals("0x000000000001")){
-                    isHorizontal = true;
-                    isVertical = false;
+                    isRobotHorizontal = true;
+                    isRobotVertical = false;
                 }
             }
 
             //calculate the horizontal movement distance
-            if( isHorizontal == true){
+            if( isRobotHorizontal == true){
                 if(distanceToA < 1.5){
                     robotCurrentHorizontal = beaconCoordinateA.x;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
                     robotCurrentHorizontal = (beaconCoordinateA.x + beaconCoordinateB.x)/2;
                 }
-                showRobotCurrentLocation(isHorizontal, (float) robotCurrentHorizontal, isVertical, 0);
+                showRobotCurrentLocation(isRobotHorizontal, (float) robotCurrentHorizontal, isRobotVertical, 0);
 
             }
 
             //calculate the vertical movement distance
-            if(isVertical == true) {
+            if(isRobotVertical == true) {
                 if(distanceToA < 1.5){
                     robotCurrentVertical = beaconCoordinateA.y;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
                     robotCurrentVertical = (beaconCoordinateA.y + beaconCoordinateB.y)/2;
                 }
-                showRobotCurrentLocation(isHorizontal, 0, isVertical, (float)robotCurrentVertical);
+                showRobotCurrentLocation(isRobotHorizontal, 0, isRobotVertical, (float)robotCurrentVertical);
             }
-        }
+        //}
     }
 
 
@@ -566,12 +565,12 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                                          boolean isVertical, float verticalTarget){
         if(isHorizontal == true) {
             objectAnimator = ObjectAnimator.ofFloat(imageRobot, "x", horizontalTarget);
-            objectAnimator.setDuration(500);
+            objectAnimator.setDuration(1000);
             objectAnimator.start();
         }
         if(isVertical == true) {
             objectAnimator= ObjectAnimator.ofFloat(imageRobot,"y", verticalTarget);
-            objectAnimator.setDuration(500);
+            objectAnimator.setDuration(1000);
             objectAnimator.start();
         }
     }
@@ -580,15 +579,15 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     public HashMap<String,PointF> initBeaconStationLocation() {
 
         // HashMap<String, PointF> virtualMap = new HashMap<>();
-        this.virtualMap.put("0x000000000060", new PointF(680,500));
-        this.virtualMap.put("0x000000000038", new PointF(680, 640));
-        this.virtualMap.put("0x000000000022", new PointF(680,780));
-        this.virtualMap.put("0x000000000011", new PointF(680, 920));
-        this.virtualMap.put("0x000000000008", new PointF(680,1060));
+        this.virtualMap.put("0x000000000060", new PointF(660,640));
+        this.virtualMap.put("0x000000000006", new PointF(660, 780));
+        this.virtualMap.put("0x000000000022", new PointF(660,920));
+        this.virtualMap.put("0x000000000011", new PointF(660, 1060));
+        this.virtualMap.put("0x000000000008", new PointF(660,1200));
         //this.virtualMap.put("0x000000000007", new PointF(640, 1000));
-        this.virtualMap.put("0x000000000006", new PointF(680,1200));
-        this.virtualMap.put("0x000000000005", new PointF(600, 1200));
-        this.virtualMap.put("0x000000000001", new PointF(450,1200));
+        //this.virtualMap.put("0x000000000006", new PointF(660,1300));
+        this.virtualMap.put("0x000000000005", new PointF(660, 1300));
+        this.virtualMap.put("0x000000000001", new PointF(450,1300));
         return (this.virtualMap);
     }
 
