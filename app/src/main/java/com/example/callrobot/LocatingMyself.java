@@ -7,7 +7,10 @@ import android.graphics.PointF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
 import android.view.View;
+import android.content.Context;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.support.v4.app.ActivityCompat;
@@ -55,7 +58,7 @@ import java.util.UUID;
 
 public class LocatingMyself extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
 
-    public static final String BASE_URL = "http://192.168.1.101:8000/v1/";
+    public static final String BASE_URL = "http://192.168.1.102:8000/v1/";
 
     ImageView imageHuman;
     ImageView imageRobot;
@@ -71,6 +74,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
     private static final String INRENT_TAG = "Intent";
     private static final String EXCEPTION_TAG = "Exception";
     private static final String ERROR_TAG = "Error";
+    private static final String VIBRATION_TAG = "Vibration";
 
     // permission request code
     private final static int MY_LOCATION_PERMISSION_REQUEST_CODE = 101;
@@ -270,6 +274,13 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                     @Override
                     public void onResponse(JSONObject response) {
                         Log.d(DEBUG_TAG, "response?"+response);
+
+                        // when the robot arrive the person
+                        if(response.has("service")){
+                            service_done();
+                            return;
+                        }
+
                         if(response.has("ticket") && response.has("robot")){
                             // check if it is my session
                             try {
@@ -369,7 +380,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
             //calculate the horizontal movement distance
             if( isHorizontal == true){
-                if(distanceToA < 1.5){
+                if(distanceToA < 1.2){
                     userCurrentHorizontal = beaconCoordinateA.x;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
@@ -379,7 +390,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
             }
             if(isVertical == true) {
-                if(distanceToA < 1.5){
+                if(distanceToA < 1.2){
                     userCurrentVertical = beaconCoordinateA.y;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
@@ -420,6 +431,13 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                                 Log.d(DEBUG_TAG, "ticket:" + sessionTicket + " robot:" + robotID);
                                 if (response.has("loc") && response.getJSONArray("loc").length() >= 2) {
                                     updateRobotLocation(robotID, response.getJSONArray("loc"));
+                                }
+                                //the first time receive the ticket
+                                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                Log.i(VIBRATION_TAG, "No vibrator service ticket is received. ");
+                                if (v.hasVibrator()) {
+                                    Log.i(VIBRATION_TAG, "has vibrator service ticket is received. ");
+                                    ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(500,200));
                                 }
                             } else {
                                 // TODO: emit message: no robot, please try again
@@ -465,6 +483,9 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                     //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateA.x + beaconCoordinateA.y);
                 }
             }
+            if(beaconCoordinateA == null){
+                return;
+            }
 
             // get the 2nd nearest distance
             JSONObject beaconLocB = null;
@@ -484,7 +505,9 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
                     //Log.d(TAG, "nearest beacon station coordinate:" + beaconCoordinateB.x + beaconCoordinateB.y);
                 }
             }
-
+            if(beaconCoordinateB == null){
+                return;
+            }
             //Log.d(TAG, "The dista" + beaconCoordinateB.x + beaconCoordinateB.y);
 
             double robotCurrentVertical = 0;
@@ -507,7 +530,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
             //calculate the horizontal movement distance
             if( isRobotHorizontal == true){
-                if(distanceToA < 1.5){
+                if(distanceToA < 1.2){
                     robotCurrentHorizontal = beaconCoordinateA.x;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
@@ -519,7 +542,7 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
             //calculate the vertical movement distance
             if(isRobotVertical == true) {
-                if(distanceToA < 1.5){
+                if(distanceToA < 1.2){
                     robotCurrentVertical = beaconCoordinateA.y;
                     Log.d(TAG, "The distance to the" + beaconIdA + "smaller than 1 meter");
                 } else {
@@ -580,15 +603,27 @@ public class LocatingMyself extends AppCompatActivity implements BeaconConsumer,
 
         // HashMap<String, PointF> virtualMap = new HashMap<>();
         this.virtualMap.put("0x000000000060", new PointF(660,640));
-        this.virtualMap.put("0x000000000006", new PointF(660, 780));
-        this.virtualMap.put("0x000000000022", new PointF(660,920));
-        this.virtualMap.put("0x000000000011", new PointF(660, 1060));
-        this.virtualMap.put("0x000000000008", new PointF(660,1200));
+        this.virtualMap.put("0x000000000022", new PointF(660, 780));
+        this.virtualMap.put("0x000000000011", new PointF(660,920));
+        this.virtualMap.put("0x000000000008", new PointF(660, 1060));
+        this.virtualMap.put("0x000000000006", new PointF(660,1200));
         //this.virtualMap.put("0x000000000007", new PointF(640, 1000));
         //this.virtualMap.put("0x000000000006", new PointF(660,1300));
         this.virtualMap.put("0x000000000005", new PointF(660, 1300));
         this.virtualMap.put("0x000000000001", new PointF(450,1300));
         return (this.virtualMap);
+    }
+
+    // the robot arrive my place
+    public void service_done(){
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        Log.i(VIBRATION_TAG, "No vibrator provided by the mobile device.");
+        if (v.hasVibrator()) {
+            Log.i(VIBRATION_TAG, "The mobile device has a vibrator ");
+            long[] mVibratePattern = new long[]{0, 500, 200, 500};
+
+            ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createWaveform(mVibratePattern, -1));
+        }
     }
 
 
