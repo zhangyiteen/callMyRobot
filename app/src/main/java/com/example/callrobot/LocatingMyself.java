@@ -58,7 +58,7 @@ import java.util.UUID;
 
 public class LocatingMyself extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
 
-    public static final String BASE_URL = "http://192.168.1.102:8000/v1/";
+    public static final String BASE_URL = "http://192.168.1.101:8000/v1/";
 
     ImageView imageHuman;
     ImageView imageRobot;

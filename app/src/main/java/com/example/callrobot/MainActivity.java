@@ -50,13 +50,13 @@ public class MainActivity extends AppCompatActivity {
         // Hook up the VideoView to our UI.
         videoBG = (VideoView) findViewById(R.id.videoView);
         // create a listener for open call robot activity
-        callRobotButton =(ImageButton) findViewById(R.id.fab1);
-        callRobotButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callRobot();
-            }
-        });
+//        callRobotButton =(ImageButton) findViewById(R.id.fab1);
+//        callRobotButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                callRobot();
+//            }
+//        });
 
         // Build your video Uri
         Uri uri = Uri.parse("android.resource://" // First start with this,
